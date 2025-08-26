@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Bot - AI-Powered Study Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #81869a 0%, #3e3b29 100%);
+        }
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .loading {
+            border: 4px solid #6a5050;
+            border-top: 4px solid #8d9fab;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chapter-card {
+            transition: all 0.3s ease;
+        }
+        .chapter-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-bold text-white mb-4">
+                <i class="fas fa-robot mr-3"></i>Study Bot
+            </h1>
+            <p class="text-xl text-white opacity-90">AI-Powered Study Assistant for Easy Learning</p>
+            <p class="text-sm text-white opacity-75 mt-2">Upload your textbook PDF and get instant chapter summaries & notes</p>
+        </header>
+
+        <!-- Upload Section -->
+        <div class="max-w-2xl mx-auto mb-12">
+            <div class="glass-effect rounded-xl p-8 text-center">
+                <h2 class="text-2xl font-bold text-white mb-6">
+                    <i class="fas fa-upload mr-2"></i>Upload Your Book
+                </h2>
+                
+                <div id="upload-area" class="border-2 border-dashed border-white border-opacity-50 rounded-lg p-8 mb-6 hover:border-opacity-100 transition-all cursor-pointer">
+                    <i class="fas fa-file-pdf text-5xl text-white opacity-50 mb-4"></i>
+                    <p class="text-white mb-2">Drop your PDF here or click to browse</p>
+                    <p class="text-white opacity-75 text-sm">Maximum file size: 50MB</p>
+                    <input type="file" id="book-upload" accept=".pdf" class="hidden">
+                </div>
+                
+                <div id="upload-status" class="hidden mb-4">
+                    <div class="loading mb-4"></div>
+                    <p class="text-white">Processing your book...</p>
+                    <p class="text-white opacity-75 text-sm">This may take a moment</p>
+                </div>
+                
+                <div id="upload-success" class="hidden bg-green-500 bg-opacity-20 border border-green-400 rounded-lg p-4 mb-4">
+                    <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                    <span class="text-green-100" id="success-message"></span>
+                </div>
+                
+                <div id="upload-error" class="hidden bg-red-500 bg-opacity-20 border border-red-400 rounded-lg p-4 mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
+                    <span class="text-red-100" id="error-message"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chapter Selection -->
+        <div id="chapter-section" class="hidden max-w-4xl mx-auto mb-12">
+            <div class="glass-effect rounded-xl p-8">
+                <h2 class="text-2xl font-bold text-white mb-6 text-center">
+                    <i class="fas fa-book-open mr-2"></i>Select Chapter to Analyze
+                </h2>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6" id="chapter-buttons">
+                    <!-- Chapter buttons will be dynamically added here -->
+                </div>
+                
+                <div class="text-center">
+                    <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                        <input 
+                            type="number" 
+                            id="chapter-input" 
+                            placeholder="Enter chapter number" 
+                            class="px-4 py-2 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-75 border border-white border-opacity-30 focus:outline-none focus:border-opacity-100 text-center"
+                            min="1"
+                        >
+                        <button 
+                            id="analyze-btn" 
+                            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                        >
+                            <i class="fas fa-search mr-2"></i>Analyze Chapter
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Results -->
+        <div id="analysis-section" class="hidden max-w-6xl mx-auto">
+            <div class="glass-effect rounded-xl p-8">
+                <div id="analysis-loading" class="text-center py-12">
+                    <div class="loading mb-4"></div>
+                    <p class="text-white text-lg mb-2">Analyzing chapter content...</p>
+                    <p class="text-white opacity-75">This may take a few moments while AI processes the text</p>
+                    <div class="mt-4">
+                        <div class="bg-white bg-opacity-20 rounded-full h-2 w-64 mx-auto">
+                            <div class="bg-blue-400 h-2 rounded-full pulse" style="width: 60%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="analysis-results" class="hidden fade-in">
+                    <!-- Chapter Title -->
+                    <div class="text-center mb-8">
+                        <h2 id="chapter-title" class="text-3xl font-bold text-white mb-2"></h2>
+                        <p id="chapter-info" class="text-white opacity-75"></p>
+                    </div>
+                    
+                    <!-- Analysis Cards -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                        <!-- Summary Card -->
+                        <div class="chapter-card bg-white bg-opacity-10 rounded-xl p-6 border border-white border-opacity-20">
+                            <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                                <i class="fas fa-file-alt mr-2 text-yellow-400"></i>
+                                Chapter Summary
+                            </h3>
+                            <div id="summary-content" class="text-white opacity-90 leading-relaxed"></div>
+                        </div>
+                        
+                        <!-- Key Points Card -->
+                        <div class="chapter-card bg-white bg-opacity-10 rounded-xl p-6 border border-white border-opacity-20">
+                            <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                                <i class="fas fa-key mr-2 text-green-400"></i>
+                                Key Points
+                            </h3>
+                            <ul id="key-points-list" class="text-white opacity-90 space-y-3"></ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Simple Explanation Card -->
+                    <div class="chapter-card bg-white bg-opacity-10 rounded-xl p-6 border border-white border-opacity-20 mb-8">
+                        <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                            <i class="fas fa-lightbulb mr-2 text-blue-400"></i>
+                            Simple Explanation
+                        </h3>
+                        <div id="simple-explanation" class="text-white opacity-90 leading-relaxed text-lg"></div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="text-center space-y-4 sm:space-y-0 sm:space-x-4 sm:flex sm:justify-center">
+                        <button id="analyze-another" class="w-full sm:w-auto px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-semibold">
+                            <i class="fas fa-redo mr-2"></i>Analyze Another Chapter
+                        </button>
+                        <button id="download-notes" class="w-full sm:w-auto px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-semibold">
+                            <i class="fas fa-download mr-2"></i>Download Notes
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="analysis-error" class="hidden text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
+                    <p id="analysis-error-message" class="text-red-200 text-lg mb-4"></p>
+                    <button id="retry-analysis" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        <i class="fas fa-redo mr-2"></i>Try Again
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-16 text-white opacity-75">
+            <p class="text-sm"> AI-Powered Learning bot</p>
+            <p class="text-xs mt-2">Built with students for students</p>
+        </footer>
+    </div>
+
+    <script>
+        class StudyBot {
+            constructor() {
+                this.initializeEventListeners();
+                this.currentBookId = null;
+                this.availableChapters = [];
+                this.currentAnalysis = null;
+            }
+
+            initializeEventListeners() {
+                // Upload area click
+                document.getElementById('upload-area').addEventListener('click', () => {
+                    document.getElementById('book-upload').click();
+                });
+
+                // File upload
+                document.getElementById('book-upload').addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        this.uploadBook(e.target.files[0]);
+                    }
+                });
+
+                // Analyze button
+                document.getElementById('analyze-btn').addEventListener('click', () => {
+                    const chapterNumber = document.getElementById('chapter-input').value;
+                    if (chapterNumber) {
+                        this.analyzeChapter(chapterNumber);
+                    } else {
+                        this.showError('Please enter a chapter number');
+                    }
+                });
+
+                // Enter key in chapter input
+                document.getElementById('chapter-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        document.getElementById('analyze-btn').click();
+                    }
+                });
+
+                // Analyze another button
+                document.getElementById('analyze-another').addEventListener('click', () => {
+                    this.showChapterSelection();
+                });
+
+                // Download notes button
+                document.getElementById('download-notes').addEventListener('click', () => {
+                    this.downloadNotes();
+                });
+
+                // Retry analysis button
+                document.getElementById('retry-analysis').addEventListener('click', () => {
+                    const chapterNumber = document.getElementById('chapter-input').value;
+                    if (chapterNumber) {
+                        this.analyzeChapter(chapterNumber);
+                    }
+                });
+
+                // Drag and drop events
+                const uploadArea = document.getElementById('upload-area');
+                
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, this.preventDefaults, false);
+                    document.body.addEventListener(eventName, this.preventDefaults, false);
+                });
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, () => {
+                        uploadArea.classList.add('border-opacity-100', 'bg-white', 'bg-opacity-10');
+                    }, false);
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, () => {
+                        uploadArea.classList.remove('border-opacity-100', 'bg-white', 'bg-opacity-10');
+                    }, false);
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        this.uploadBook(files[0]);
+                    }
+                }, false);
+            }
+
+            preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            showError(message) {
+                document.getElementById('error-message').textContent = message;
+                this.showElement('upload-error');
+                setTimeout(() => {
+                    this.hideElement('upload-error');
+                }, 5000);
+            }
+
+            async uploadBook(file) {
+                // Validate file
+                if (!file.name.toLowerCase().endsWith('.pdf')) {
+                    this.showError('Please upload a PDF file');
+                    return;
+                }
+
+                if (file.size > 50 * 1024 * 1024) {
+                    this.showError('File size must be less than 50MB');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('book', file);
+
+                // Show loading state
+                this.showElement('upload-status');
+                this.hideElement('upload-success');
+                this.hideElement('upload-error');
+
+                try {
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    this.hideElement('upload-status');
+
+                    if (result.success) {
+                        this.currentBookId = result.book_id;
+                        this.availableChapters = result.available_chapters;
+                        
+                        document.getElementById('success-message').textContent = result.message;
+                        this.showElement('upload-success');
+                        
+                        // Auto-advance to chapter selection after 3 seconds
+                        setTimeout(() => {
+                            this.showChapterSelection();
+                        }, 3000);
+                    } else {
+                        this.showError(result.error || 'Upload failed');
+                    }
+                } catch (error) {
+                    this.hideElement('upload-status');
+                    this.showError('Upload failed. Please check your internet connection and try again.');
+                    console.error('Upload error:', error);
+                }
+            }
+
+            showChapterSelection() {
+                this.showElement('chapter-section');
+                this.hideElement('analysis-section');
+                document.getElementById('chapter-input').value = '';
+                
+                // Scroll to chapter selection
+                document.getElementById('chapter-section').scrollIntoView({ 
+                    behavior: 'smooth' 
+                });
+                
+                // Create chapter buttons
+                this.createChapterButtons();
+            }
+
+            createChapterButtons() {
+                const buttonContainer = document.getElementById('chapter-buttons');
+                buttonContainer.innerHTML = '';
+                
+                // Sort chapters numerically
+                const sortedChapters = this.availableChapters.sort((a, b) => {
+                    return parseInt(a) - parseInt(b);
+                });
+                
+                // Show first 24 chapters as buttons
+                sortedChapters.slice(0, 24).forEach(chapterNum => {
+                    const button = document.createElement('button');
+                    button.className = 'px-3 py-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-all duration-200 text-sm font-medium border border-white border-opacity-20 hover:border-opacity-40';
+                    button.textContent = chapterNum;
+                    button.onclick = () => {
+                        document.getElementById('chapter-input').value = chapterNum;
+                        this.analyzeChapter(chapterNum);
+                    };
+                    buttonContainer.appendChild(button);
+                });
+
+                // If more than 24 chapters, show info
+                if (sortedChapters.length > 24) {
+                    const info = document.createElement('div');
+                    info.className = 'col-span-full text-center text-white opacity-75 text-sm mt-2';
+                    info.textContent = `Showing first 24 chapters. Total: ${sortedChapters.length} chapters available.`;
+                    buttonContainer.appendChild(info);
+                }
+            }
+
+            async analyzeChapter(chapterNumber) {
+                // Show analysis section and loading
+                this.showElement('analysis-section');
+                this.showElement('analysis-loading');
+                this.hideElement('analysis-results');
+                this.hideElement('analysis-error');
+
+                // Scroll to analysis section
+                document.getElementById('analysis-section').scrollIntoView({ 
+                    behavior: 'smooth' 
+                });
+
+                try {
+                    const response = await fetch('/analyze', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chapter_number: chapterNumber
+                        })
+                    });
+
+                    const result = await response.json();
+                    this.hideElement('analysis-loading');
+
+                    if (result.error) {
+                        document.getElementById('analysis-error-message').textContent = result.error;
+                        this.showElement('analysis-error');
+                    } else {
+                        this.displayAnalysis(result);
+                        this.showElement('analysis-results');
+                    }
+                } catch (error) {
+                    this.hideElement('analysis-loading');
+                    document.getElementById('analysis-error-message').textContent = 'Failed to analyze chapter. Please check your internet connection and try again.';
+                    this.showElement('analysis-error');
+                    console.error('Analysis error:', error);
+                }
+            }
+
+            displayAnalysis(analysis) {
+                // Store current analysis
+                this.currentAnalysis = analysis;
+
+                // Chapter title and info
+                document.getElementById('chapter-title').textContent = analysis.chapter_title || `Chapter ${analysis.chapter_number}`;
+                document.getElementById('chapter-info').textContent = 
+                    `Chapter ${analysis.chapter_number} • ${analysis.word_count} words`;
+
+                // Summary
+                document.getElementById('summary-content').textContent = analysis.summary || 'No summary available.';
+
+                // Key points
+                const keyPointsList = document.getElementById('key-points-list');
+                keyPointsList.innerHTML = '';
+                
+                if (analysis.key_points && analysis.key_points.length > 0) {
+                    analysis.key_points.forEach(point => {
+                        const li = document.createElement('li');
+                        li.className = 'flex items-start space-x-3';
+                        li.innerHTML = `
+                            <i class="fas fa-chevron-right text-green-400 text-sm mt-1 flex-shrink-0"></i>
+                            <span class="text-sm leading-relaxed">${point}</span>
+                        `;
+                        keyPointsList.appendChild(li);
+                    });
+                } else {
+                    keyPointsList.innerHTML = '<li class="text-white opacity-75">No key points extracted.</li>';
+                }
+
+                // Simple explanation
+                document.getElementById('simple-explanation').textContent = 
+                    analysis.simple_explanation || 'No simple explanation available.';
+            }
+
+            downloadNotes() {
+                if (!this.currentAnalysis) {
+                    this.showError('No analysis data available for download');
+                    return;
+                }
+
+                const analysis = this.currentAnalysis;
+                const notes = `
+STUDY NOTES
+===========
+
+Chapter: ${analysis.chapter_title}
+Chapter Number: ${analysis.chapter_number}
+Word Count: ${analysis.word_count}
+Generated: ${new Date().toLocaleString()}
+
+CHAPTER SUMMARY
+===============
+${analysis.summary}
+
+KEY POINTS
+==========
+${analysis.key_points ? analysis.key_points.map((point, index) => `${index + 1}. ${point}`).join('\n') : 'No key points available'}
+
+SIMPLE EXPLANATION
+==================
+${analysis.simple_explanation}
+
+---
+Generated by Study Bot AI
+Visit: https://your-domain.com
+                `.trim();
+
+                try {
+                    const blob = new Blob([notes], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Chapter_${analysis.chapter_number}_${analysis.chapter_title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}_Notes.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    // Show success message
+                    this.showTemporaryMessage('Notes downloaded successfully!', 'success');
+                } catch (error) {
+                    console.error('Download error:', error);
+                    this.showError('Failed to download notes. Please try again.');
+                }
+            }
+
+            showTemporaryMessage(message, type = 'info') {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+                    type === 'success' ? 'bg-green-500' : 
+                    type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                } text-white`;
+                messageDiv.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas ${
+                            type === 'success' ? 'fa-check-circle' : 
+                            type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle'
+                        } mr-2"></i>
+                        <span>${message}</span>
+                    </div>
+                `;
+                
+                document.body.appendChild(messageDiv);
+                
+                setTimeout(() => {
+                    messageDiv.remove();
+                }, 3000);
+            }
+
+            showElement(id) {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.classList.remove('hidden');
+                }
+            }
+
+            hideElement(id) {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.classList.add('hidden');
+                }
+            }
+        }
+
+        // Initialize the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new StudyBot();
+            
+            // Add some loading animation on page load
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.5s ease-in';
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+
+        // Add some interactive effects
+        document.addEventListener('mousemove', (e) => {
+            const cursor = document.createElement('div');
+            cursor.style.cssText = `
+                position: fixed;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+                pointer-events: none;
+                left: ${e.clientX - 10}px;
+                top: ${e.clientY - 10}px;
+                z-index: 9999;
+                animation: fade-out 1s ease-out forwards;
+            `;
+            
+            document.body.appendChild(cursor);
+            
+            setTimeout(() => {
+                if (cursor.parentNode) {
+                    cursor.parentNode.removeChild(cursor);
+                }
+            }, 1000);
+        });
+
+        // Add CSS for fade-out animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fade-out {
+                to {
+                    opacity: 0;
+                    transform: scale(2);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
